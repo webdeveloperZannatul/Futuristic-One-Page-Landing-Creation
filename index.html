@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Novasphere — Infrastructure for the next frontier</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://code.iconify.design/3/3.1.0/iconify.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      fontFamily: { inter: ['Inter','sans-serif'] },
+      colors: {
+        void: { 900:'#050508', 800:'#0a0a10', 700:'#10101a', 600:'#16162a' },
+        accent: '#e63946',
+        glow: { red:'rgba(230,57,70,0.12)', blue:'rgba(56,120,255,0.10)', purple:'rgba(130,80,230,0.08)' }
+      }
+    }
+  }
+}
+</script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',sans-serif;background:#050508;color:#e8e8ed;overflow-x:hidden}
+
+/* ── Starfield ── */
+#starfield{position:fixed;inset:0;z-index:0;pointer-events:none}
+.star{position:absolute;border-radius:50%;background:#fff}
+@keyframes blink{0%,100%{opacity:.15}50%{opacity:var(--peak,.7)}}
+
+/* ── Nebula blobs ── */
+.nebula{position:absolute;border-radius:50%;filter:blur(140px);pointer-events:none;will-change:transform}
+@keyframes drift{0%,100%{transform:translate(0,0) scale(1)}40%{transform:translate(40px,-30px) scale(1.08)}70%{transform:translate(-25px,20px) scale(.94)}}
+
+/* ── Grid overlay ── */
+.cosmic-grid{
+  background-image:linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px);
+  background-size:72px 72px;
+}
+
+/* ── Rings around planet ── */
+.ring{position:absolute;border-radius:50%;border:1px solid rgba(230,57,70,.12);animation:spin 35s linear infinite}
+.ring.blue{border-color:rgba(56,120,255,.08);animation-direction:reverse;animation-duration:50s}
+.ring.purple{border-color:rgba(130,80,230,.06);animation-duration:70s}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── Orbiting dots ── */
+.orbit{position:absolute;border-radius:50%;border:1px dashed rgba(255,255,255,.025);animation:spin var(--t,30s) linear infinite}
+.orbit.reverse{animation-direction:reverse}
+.orbit .dot{position:absolute;width:5px;height:5px;border-radius:50%;top:-2.5px;left:50%;transform:translateX(-50%)}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── Cards ── */
+.sys-card{
+  position:relative;overflow:hidden;
+  background:rgba(255,255,255,.015);border:1px solid rgba(255,255,255,.05);
+  border-radius:16px;padding:32px;transition:all .45s cubic-bezier(.22,1,.36,1);
+}
+.sys-card::after{
+  content:'';position:absolute;inset:0;border-radius:16px;
+  background:radial-gradient(600px circle at var(--mx,50%) var(--my,50%),rgba(230,57,70,.06),transparent 50%);
+  opacity:0;transition:opacity .4s;pointer-events:none;
+}
+.sys-card:hover::after{opacity:1}
+.sys-card:hover{border-color:rgba(230,57,70,.25);transform:translateY(-6px);box-shadow:0 30px 80px -20px rgba(230,57,70,.12)}
+.sys-card .ico{transition:all .35s}
+.sys-card:hover .ico{transform:scale(1.1);box-shadow:0 0 32px var(--c,rgba(230,57,70,.3))}
+
+/* ── Pillar cards ── */
+.pillar{
+  position:relative;overflow:hidden;
+  background:rgba(255,255,255,.015);border:1px solid rgba(255,255,255,.05);
+  border-radius:16px;padding:36px;transition:all .4s;
+}
+.pillar:hover{border-color:rgba(255,255,255,.1);background:rgba(255,255,255,.03)}
+.pillar .big-num{
+  position:absolute;top:-18px;right:16px;font-size:130px;font-weight:900;line-height:1;
+  background:linear-gradient(180deg,rgba(255,255,255,.04),transparent);-webkit-background-clip:text;-webkit-text-fill-color:transparent;pointer-events:none;
+}
+
+/* ── Buttons ── */
+.btn-r{background:#e63946;color:#fff;font-weight:600;padding:15px 36px;border-radius:10px;font-size:14px;border:none;cursor:pointer;transition:all .15s;box-shadow:0 6px 24px rgba(230,57,70,.25);display:inline-flex;align-items:center;gap:8px}
+.btn-r:hover{background:#c1303c;box-shadow:0 8px 32px rgba(230,57,70,.35)}
+.btn-g{background:transparent;color:#fff;font-weight:500;padding:15px 36px;border-radius:10px;font-size:14px;border:1px solid rgba(255,255,255,.15);cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:8px}
+.btn-g:hover{border-color:rgba(255,255,255,.4);background:rgba(255,255,255,.04)}
+
+/* ── Form ── */
+.field{
+  width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);
+  border-radius:10px;padding:14px 18px;color:#fff;font-size:14px;font-family:'Inter',sans-serif;
+  outline:none;transition:all .3s;
+}
+.field::placeholder{color:rgba(255,255,255,.25)}
+.field:focus{border-color:rgba(230,57,70,.45);background:rgba(255,255,255,.06);box-shadow:0 0 0 3px rgba(230,57,70,.08)}
+
+/* ── Glow border for form ── */
+.glow-wrap{position:relative;border-radius:18px;padding:2px}
+.glow-wrap::before{
+  content:'';position:absolute;inset:-1px;border-radius:18px;
+  background:conic-gradient(from 0deg,#e63946,#3878ff,#8250e6,#e63946);
+  filter:blur(10px);opacity:.45;animation:rotateBorder 8s linear infinite;z-index:-1;
+}
+@keyframes rotateBorder{to{filter:blur(10px) hue-rotate(360deg)}}
+.glow-inner{background:#0a0a10;border-radius:16px;padding:40px}
+
+/* ── Divider ── */
+.divider{height:1px;border:none;background:linear-gradient(90deg,transparent,rgba(230,57,70,.2),transparent);max-width:56rem;margin:0 auto}
+
+/* ── Nav ── */
+.nav-glass{backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);background:rgba(5,5,8,.75);border-bottom:1px solid rgba(255,255,255,.04)}
+
+/* ── Reveal ── */
+.rv{opacity:0;transform:translateY(36px);transition:all .9s cubic-bezier(.16,1,.3,1)}
+.rv.on{opacity:1;transform:translateY(0)}
+.d1{transition-delay:.1s}.d2{transition-delay:.2s}.d3{transition-delay:.3s}.d4{transition-delay:.4s}.d5{transition-delay:.5s}
+
+/* ── Toast ── */
+.toast-box{
+  position:fixed;bottom:28px;right:28px;z-index:999;
+  background:rgba(12,12,20,.92);border:1px solid rgba(230,57,70,.25);
+  border-radius:14px;padding:18px 24px;backdrop-filter:blur(14px);
+  transform:translateY(140px);opacity:0;transition:all .5s cubic-bezier(.34,1.56,.64,1);
+  display:flex;align-items:center;gap:14px;
+}
+.toast-box.show{transform:translateY(0);opacity:1}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:#050508}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.15)}
+
+/* ── Mobile menu ── */
+.mob-menu{
+  position:fixed;inset:0;z-index:45;background:rgba(5,5,8,.96);backdrop-filter:blur(24px);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:32px;
+  transform:scale(.95);opacity:0;pointer-events:none;transition:all .35s cubic-bezier(.22,1,.36,1);
+}
+.mob-menu.open{transform:scale(1);opacity:1;pointer-events:auto}
+</style>
+</head>
+<body class="font-inter">
+
+<!-- Starfield -->
+<div id="starfield"></div>
+
+<!-- ═══════════ NAV ═══════════ -->
+<nav class="nav-glass fixed top-0 left-0 right-0 z-50 h-16 flex items-center">
+  <div class="max-w-7xl mx-auto w-full px-6 flex items-center justify-between">
+    <a href="#" class="flex items-center gap-2.5">
+      <div class="w-8 h-8 rounded-lg bg-accent flex items-center justify-center">
+        <span class="iconify text-white text-[15px]" data-icon="lucide:hexagon"></span>
+      </div>
+      <span class="text-white font-semibold text-[17px] tracking-tight">Novasphere</span>
+    </a>
+    <div class="hidden md:flex items-center gap-9">
+      <a href="#systems" class="text-[13px] text-neutral-500 hover:text-white transition-colors">Systems</a>
+      <a href="#pillars" class="text-[13px] text-neutral-500 hover:text-white transition-colors">Principles</a>
+      <a href="#access" class="text-[13px] text-neutral-500 hover:text-white transition-colors">Early Access</a>
+      <button class="btn-r text-[12px] !px-5 !py-2.5" onclick="go('access')">Get Started</button>
+    </div>
+    <button class="md:hidden text-white" id="mobBtn" aria-label="Menu">
+      <span class="iconify text-[26px]" data-icon="lucide:menu"></span>
+    </button>
+  </div>
+</nav>
+
+<!-- Mobile menu -->
+<div class="mob-menu" id="mobMenu">
+  <a href="#systems" class="text-2xl font-light text-white mob-link">Systems</a>
+  <a href="#pillars" class="text-2xl font-light text-white mob-link">Principles</a>
+  <a href="#access" class="text-2xl font-light text-white mob-link">Early Access</a>
+  <button class="btn-r mt-2" onclick="go('access');closeMob()">Get Started</button>
+  <button class="absolute top-5 right-6 text-white" onclick="closeMob()" aria-label="Close">
+    <span class="iconify text-[26px]" data-icon="lucide:x"></span>
+  </button>
+</div>
+
+<!-- ═══════════ HERO ═══════════ -->
+<section class="relative min-h-screen flex items-center justify-center pt-16 overflow-hidden">
+  <!-- Nebula blobs -->
+  <div class="nebula w-[550px] h-[550px] bg-accent/[.07] -top-48 -right-48" style="animation:drift 14s ease-in-out infinite"></div>
+  <div class="nebula w-[420px] h-[420px] bg-blue-600/[.05] bottom-10 -left-36" style="animation:drift 18s ease-in-out infinite;animation-delay:-5s"></div>
+  <div class="nebula w-[320px] h-[320px] bg-purple-600/[.04] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" style="animation:drift 20s ease-in-out infinite;animation-delay:-10s"></div>
+
+  <!-- Orbital system -->
+  <div class="absolute inset-0 flex items-center justify-center pointer-events-none" id="orbitBox">
+    <div class="orbit w-[280px] h-[280px] md:w-[460px] md:h-[460px]" style="--t:35s">
+      <div class="dot bg-accent" style="box-shadow:0 0 14px rgba(230,57,70,.7)"></div>
+    </div>
+    <div class="orbit reverse w-[440px] h-[440px] md:w-[700px] md:h-[700px]" style="--t:55s">
+      <div class="dot bg-blue-500" style="box-shadow:0 0 14px rgba(56,120,255,.7)"></div>
+    </div>
+    <div class="orbit w-[180px] h-[180px] md:w-[280px] md:h-[280px]" style="--t:22s">
+      <div class="dot bg-purple-500 !w-3.5 !h-3.5 !top-[-7px]" style="box-shadow:0 0 12px rgba(130,80,230,.7)"></div>
+    </div>
+    <!-- Center -->
+    <div class="w-2.5 h-2.5 rounded-full bg-white/70" style="box-shadow:0 0 24px rgba(255,255,255,.25)"></div>
+  </div>
+
+  <div class="relative z-10 max-w-5xl mx-auto px-6 text-center">
+    <div class="rv inline-flex items-center gap-2.5 px-4 py-2 rounded-full border border-white/[.06] bg-white/[.02] mb-8">
+      <span class="w-[7px] h-[7px] rounded-full bg-accent animate-pulse"></span>
+      <span class="text-[11px] font-medium text-neutral-400 tracking-widest uppercase">Now in Early Access</span>
+    </div>
+
+    <h1 class="rv d1 text-[clamp(2.4rem,6vw,4.5rem)] font-extrabold tracking-tight leading-[1.06] mb-7">
+      Infrastructure for<br>
+      <span class="bg-gradient-to-r from-accent via-red-400 to-purple-500 bg-clip-text text-transparent">the next frontier</span>
+    </h1>
+
+    <p class="rv d2 text-base md:text-[18px] text-neutral-400 max-w-[600px] mx-auto mb-11 leading-relaxed">
+      A planetary-scale compute fabric designed for civilizations that refuse to stay grounded. Build, deploy, and scale across the cosmos.
+    </p>
+
+    <div class="rv d3 flex flex-col sm:flex-row items-center justify-center gap-4">
+      <button class="btn-r" onclick="go('access')">
+        Request Early Access
+        <span class="iconify text-sm" data-icon="lucide:arrow-right"></span>
+      </button>
+      <button class="btn-g" onclick="go('systems')">
+        Explore Systems
+        <span class="iconify text-sm" data-icon="lucide:chevron-down"></span>
+      </button>
+    </div>
+
+    <!-- Scroll hint -->
+    <div class="rv d5 mt-24 flex flex-col items-center gap-2">
+      <span class="text-[10px] uppercase tracking-[.2em] text-neutral-600">Scroll</span>
+      <div class="w-5 h-9 rounded-full border border-neutral-700 flex items-start justify-center pt-2">
+        <div class="w-[3px] h-2 rounded-full bg-accent animate-bounce"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ PLANETARY SYSTEM ═══════════ -->
+<section class="relative py-28 md:py-36 overflow-hidden">
+  <div class="cosmic-grid absolute inset-0 opacity-40"></div>
+  <div class="max-w-7xl mx-auto px-6 relative z-10">
+    <div class="text-center mb-20">
+      <p class="rv text-[11px] font-bold uppercase tracking-[.2em] text-accent mb-4">Architecture</p>
+      <h2 class="rv d1 text-3xl md:text-[3.2rem] font-extrabold tracking-tight mb-5 leading-tight">
+        A planetary system,<br>engineered as one.
+      </h2>
+      <p class="rv d2 text-neutral-400 max-w-xl mx-auto leading-relaxed">
+        Every node, every mesh, every quantum pathway — unified into a single coherent surface of infinite compute.
+      </p>
+    </div>
+
+    <!-- Stats -->
+    <div class="rv d2 grid grid-cols-2 lg:grid-cols-4 gap-5 mb-20">
+      <div class="text-center py-8 px-5 rounded-2xl border border-white/[.04] bg-white/[.015]">
+        <div class="ctr text-[2.5rem] md:text-4xl font-extrabold leading-none mb-2" data-to="12" data-sfx="K+">0</div>
+        <p class="text-[11px] text-neutral-500 uppercase tracking-widest">Edge Nodes</p>
+      </div>
+      <div class="text-center py-8 px-5 rounded-2xl border border-white/[.04] bg-white/[.015]">
+        <div class="ctr text-[2.5rem] md:text-4xl font-extrabold leading-none mb-2" data-to="99.99" data-sfx="%" data-dec="2">0</div>
+        <p class="text-[11px] text-neutral-500 uppercase tracking-widest">Uptime SLA</p>
+      </div>
+      <div class="text-center py-8 px-5 rounded-2xl border border-white/[.04] bg-white/[.015]">
+        <div class="ctr text-[2.5rem] md:text-4xl font-extrabold leading-none mb-2" data-to="0.3" data-sfx="ms" data-dec="1">0</div>
+        <p class="text-[11px] text-neutral-500 uppercase tracking-widest">Latency</p>
+      </div>
+      <div class="text-center py-8 px-5 rounded-2xl border border-white/[.04] bg-white/[.015]">
+        <div class="ctr text-[2.5rem] md:text-4xl font-extrabold leading-none mb-2" data-to="400" data-sfx="PB">0</div>
+        <p class="text-[11px] text-neutral-500 uppercase tracking-widest">Throughput</p>
+      </div>
+    </div>
+
+    <!-- Planet visual -->
+    <div class="rv d3 relative flex items-center justify-center py-8">
+      <div class="relative w-60 h-60 md:w-80 md:h-80">
+        <div class="ring w-60 h-60 md:w-80 md:h-80 top-0 left-0"></div>
+        <div class="ring blue w-72 h-72 md:w-[380px] md:h-[380px] -top-6 -left-6"></div>
+        <div class="ring purple w-84 h-84 md:w-[480px] md:h-[480px] -top-12 -left-12" style="width:21rem;height:21rem"></div>
+        <div class="absolute inset-0 rounded-full bg-gradient-to-br from-accent/10 via-transparent to-blue-900/10 border border-white/[.04]"></div>
+        <div class="absolute inset-5 rounded-full bg-gradient-to-tr from-void-800 to-transparent border border-white/[.03]"></div>
+        <div class="absolute top-1/4 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/[.07] to-transparent"></div>
+        <div class="absolute top-1/2 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/[.03] to-transparent"></div>
+        <div class="absolute top-3/4 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/[.05] to-transparent"></div>
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-14 h-14 rounded-full bg-accent/15 blur-2xl"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═══════════ SIX SYSTEMS ═══════════ -->
+<section id="systems" class="relative py-28 md:py-36">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="text-center mb-20">
+      <p class="rv text-[11px] font-bold uppercase tracking-[.2em] text-accent mb-4">Core Systems</p>
+      <h2 class="rv d1 text-3xl md:text-[3.2rem] font-extrabold tracking-tight mb-5 leading-tight">
+        Six systems.<br>One coherent surface.
+      </h2>
+      <p class="rv d2 text-neutral-400 max-w-xl mx-auto leading-relaxed">
+        Each system is powerful alone. Together, they form an infrastructure layer with no seams and no limits.
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" id="sysGrid">
+      <!-- 1 Quantum Mesh -->
+      <div class="rv sys-card">
+        <div class="ico w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center mb-6" style="--c:rgba(230,57,70,.3)">
+          <span class="iconify text-[22px] text-accent" data-icon="lucide:network"></span>
+        </div>
+        <h3 class="text-[17px] font-bold mb-2.5">Quantum Mesh</h3>
+        <p class="text-[13px] text-neutral-400 leading-relaxed mb-5">Entangled networking fabric that eliminates latency boundaries between nodes across any distance.</p>
+        <div class="flex items-center gap-2 text-[12px] text-accent font-semibold cursor-pointer hover:gap-3 transition-all">
+          Learn more <span class="iconify" data-icon="lucide:arrow-right"></span>
+        </div>
+      </div>
+      <!-- 2 Adaptive AI Core -->
+      <div class="rv d1 sys-card">
+        <div class="ico w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center mb-6" style="--c:rgba(56,120,255,.3)">
+          <span class="iconify text-[22px] text-blue-400" data-icon="lucide:brain-circuit"></span>
+        </div>
+        <h3 class="text-[17px] font-bold mb-2.5">Adaptive AI Core</h3>
+        <p class="text-[13px] text-neutral-400 leading-relaxed mb-5">Self-evolving intelligence layer that optimizes resource allocation, routing, and compute in real-time.</p>
+        <div class="flex items-center gap-2 text-[12px] text-blue-400 font-semibold cursor-pointer hover:gap-3 transition-all">
+          Learn more <span class="iconify" data-icon="lucide:arrow-right"></span>
+        </div>
+      </div>
+      <!-- 3 Void Storage -->
+      <div class="rv d2 sys-card">
+        <div class="ico w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center mb-6" style="--c:rgba(130,80,230,.3)">
+          <span class="iconify text-[22px] text-purple-400" data-icon="lucide:database"></span>
+        </div>
+        <h3 class="text-[17px] font-bold mb-2.5">Void Storage</h3>
+        <p class="text-[13px] text-neutral-400 leading-relaxed mb-5">Distributed storage substrate with infinite horizontal scaling and zero-downtime replication.</p>
+        <div class="flex items-center gap-2 text-[12px] text-purple-400 font-semibold cursor-pointer hover:gap-3 transition-all">
+          Learn more <span class="iconify" data-icon="lucide:arrow-right"></span>
+        </div>
+      </div>
+      <!-- 4 Photon Relay -->
+      <div class="rv d1 sys-card">
+        <div class="ico w-12 h-12 rounded-xl bg-cyan-500/10 flex items-center justify-center mb-6" style="--c:rgba(6,182,212,.3)">
+          <span class="iconify text-[22px] text-cyan-400" data-icon="lucide:zap"></span>
+        </div>
+        <h3 class="text-[17px] font-bold mb-2.5">Photon Relay</h3>
+        <p class="text-[13px] text-neutral-400 leading-relaxed mb-5">Light-speed data transport layer using photonic interconnects for sub-millisecond global propagation.</p>
+        <div class="flex items-center gap-2 text-[12px] text-cyan-400 font-semibold cursor-pointer hover:gap-3 transition-all">
+          Learn more <span class="iconify" data-icon="lucide:arrow-right"></span>
+        </div>
+      </div>
+      <!-- 5 Gravity Compute -->
+      <div class="rv d2 sys-card">
+        <div class="ico w-12 h-12 rounded-xl bg-orange-500/10 flex items-center justify-center mb-6" style="--c:rgba(249,115,22,.3)">
+          <span class="iconify text-[22px] text-orange-400" data-icon="lucide:cpu"></span>
+        </div>
+        <h3 class="text-[17px] font-bold mb-2.5">Gravity Compute</h3>
+        <p class="text-[13px] text-neutral-400 leading-relaxed mb-5">Massively parallel processing engine that bends workloads around available capacity with zero waste.</p>
+        <div class="flex items-center gap-2 text-[12px] text-orange-400 font-semibold cursor-pointer hover:gap-3 transition-all">
+          Learn more <span class="iconify" data-icon="lucide:arrow-right"></span>
+        </div>
+      </div>
+      <!-- 6 Aegis Shield -->
+      <div class="rv d3 sys-card">
+        <div class="ico w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center mb-6" style="--c:rgba(16,185,129,.3)">
+          <span class="iconify text-[22px] text-emerald-400" data-icon="lucide:shield-check"></span>
+        </div>
+        <h3 class="text-[17px] font-bold mb-2.5">Aegis Shield</h3>
+        <p class="text-[13px] text-neutral-400 leading-relaxed mb-5">Autonomous security mesh with quantum-resistant encryption and predictive threat neutralization.</p>
+        <div class="flex items-center gap-2 text-[12px] text-emerald-400 font-semibold cursor-pointer hover:gap-3 transition-all">
+          Learn more <span class="iconify" data-icon="lucide:arrow-right"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═══════════ THREE PILLARS ═══════════ -->
+<section id="pillars" class="relative py-28 md:py-36 overflow-hidden">
+  <div class="nebula w-[400px] h-[400px] bg-purple-600/[.05] top-0 right-0" style="animation:drift 16s ease-in-out infinite;animation-delay:-4s"></div>
+  <div class="max-w-7xl mx-auto px-6 relative z-10">
+    <div class="text-center mb-20">
+      <p class="rv text-[11px] font-bold uppercase tracking-[.2em] text-accent mb-4">Our Principles</p>
+      <h2 class="rv d1 text-3xl md:text-[3.2rem] font-extrabold tracking-tight mb-5 leading-tight">
+        Three pillars define every<br>decision we make.
+      </h2>
+      <p class="rv d2 text-neutral-400 max-w-xl mx-auto leading-relaxed">
+        Not features. Not roadmaps. These are the immutable laws that govern every line of code and every hardware choice.
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <!-- Pillar 1 -->
+      <div class="rv pillar">
+        <div class="big-num">01</div>
+        <div class="relative z-10">
+          <div class="w-11 h-11 rounded-xl bg-accent/10 flex items-center justify-center mb-7">
+            <span class="iconify text-xl text-accent" data-icon="lucide:maximize"></span>
+          </div>
+          <h3 class="text-xl font-bold mb-3">Built for scale</h3>
+          <p class="text-[13px] text-neutral-400 leading-relaxed mb-7">
+            From a single request to a billion concurrent flows — the architecture doesn't change, it breathes. Scale is not a feature, it's the foundation.
+          </p>
+          <div class="pt-6 border-t border-white/[.04] flex items-center gap-3">
+            <span class="iconify text-accent text-[15px]" data-icon="lucide:trending-up"></span>
+            <span class="text-[12px] text-neutral-500">Linear cost at exponential scale</span>
+          </div>
+        </div>
+      </div>
+      <!-- Pillar 2 -->
+      <div class="rv d2 pillar">
+        <div class="big-num">02</div>
+        <div class="relative z-10">
+          <div class="w-11 h-11 rounded-xl bg-blue-500/10 flex items-center justify-center mb-7">
+            <span class="iconify text-xl text-blue-400" data-icon="lucide:lock"></span>
+          </div>
+          <h3 class="text-xl font-bold mb-3">Zero-trust by default</h3>
+          <p class="text-[13px] text-neutral-400 leading-relaxed mb-7">
+            Every packet, every process, every identity is verified at every boundary. Trust is earned continuously, never assumed — not even internally.
+          </p>
+          <div class="pt-6 border-t border-white/[.04] flex items-center gap-3">
+            <span class="iconify text-blue-400 text-[15px]" data-icon="lucide:key-round"></span>
+            <span class="text-[12px] text-neutral-500">Post-quantum cryptography built-in</span>
+          </div>
+        </div>
+      </div>
+      <!-- Pillar 3 -->
+      <div class="rv d4 pillar">
+        <div class="big-num">03</div>
+        <div class="relative z-10">
+          <div class="w-11 h-11 rounded-xl bg-purple-500/10 flex items-center justify-center mb-7">
+            <span class="iconify text-xl text-purple-400" data-icon="lucide:infinity"></span>
+          </div>
+          <h3 class="text-xl font-bold mb-3">Resilience without bounds</h3>
+          <p class="text-[13px] text-neutral-400 leading-relaxed mb-7">
+            No single point of failure. No cascading collapses. The system heals, reroutes, and strengthens under pressure — always.
+          </p>
+          <div class="pt-6 border-t border-white/[.04] flex items-center gap-3">
+            <span class="iconify text-purple-400 text-[15px]" data-icon="lucide:refresh-cw"></span>
+            <span class="text-[12px] text-neutral-500">Self-healing in under 50ms</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═══════════ EARLY ACCESS ═══════════ -->
+<section id="access" class="relative py-28 md:py-36">
+  <div class="cosmic-grid absolute inset-0 opacity-25"></div>
+  <div class="max-w-7xl mx-auto px-6 relative z-10">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-20 items-center">
+      <!-- Left -->
+      <div>
+        <p class="rv text-[11px] font-bold uppercase tracking-[.2em] text-accent mb-4">Early Access</p>
+        <h2 class="rv d1 text-3xl md:text-[2.8rem] font-extrabold tracking-tight mb-5 leading-tight">
+          Be among the first to build on Novasphere.
+        </h2>
+        <p class="rv d2 text-neutral-400 leading-relaxed mb-10">
+          We're onboarding a select group of builders who see what's coming. Get priority access to the API, SDK, and dedicated infrastructure tokens.
+        </p>
+        <div class="rv d3 space-y-5">
+          <div class="flex items-start gap-3.5">
+            <div class="w-5 h-5 rounded-full bg-accent/15 flex items-center justify-center shrink-0 mt-0.5">
+              <span class="iconify text-accent text-[11px]" data-icon="lucide:check"></span>
+            </div>
+            <span class="text-[14px] text-neutral-300">Priority API access with dedicated rate limits</span>
+          </div>
+          <div class="flex items-start gap-3.5">
+            <div class="w-5 h-5 rounded-full bg-accent/15 flex items-center justify-center shrink-0 mt-0.5">
+              <span class="iconify text-accent text-[11px]" data-icon="lucide:check"></span>
+            </div>
+            <span class="text-[14px] text-neutral-300">Full SDK for Go, Rust, Python, and TypeScript</span>
+          </div>
+          <div class="flex items-start gap-3.5">
+            <div class="w-5 h-5 rounded-full bg-accent/15 flex items-center justify-center shrink-0 mt-0.5">
+              <span class="iconify text-accent text-[11px]" data-icon="lucide:check"></span>
+            </div>
+            <span class="text-[14px] text-neutral-300">$2,000 in infrastructure credits to start</span>
+          </div>
+          <div class="flex items-start gap-3.5">
+            <div class="w-5 h-5 rounded-full bg-accent/15 flex items-center justify-center shrink-0 mt-0.5">
+              <span class="iconify text-accent text-[11px]" data-icon="lucide:check"></span>
+            </div>
+            <span class="text-[14px] text-neutral-300">Direct Slack channel with the engineering team</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Form -->
+      <div class="rv d2">
+        <div class="glow-wrap">
+          <div class="glow-inner">
+            <form id="eaForm" class="space-y-5" onsubmit="submitForm(event)">
+              <div>
+                <label class="block text-[11px] font-semibold text-neutral-400 mb-2 uppercase tracking-widest">Full Name</label>
+                <input type="text" class="field" placeholder="Ada Lovelace" required>
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-neutral-400 mb-2 uppercase tracking-widest">Email</label>
+                <input type="email" class="field" placeholder="ada@example.com" required>
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-neutral-400 mb-2 uppercase tracking-widest">Company / Project</label>
+                <input type="text" class="field" placeholder="Your organization">
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-neutral-400 mb-2 uppercase tracking-widest">Primary Use Case</label>
+                <select class="field appearance-none cursor-pointer" style="background-image:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2216%22 height=%2216%22 fill=%22none%22 stroke=%22%23666%22 stroke-width=%222%22><polyline points=%226 9 12 15 18 9%22/></svg>');background-repeat:no-repeat;background-position:right 16px center">
+                  <option value="" style="background:#0a0a10">Select a use case</option>
+                  <option value="compute" style="background:#0a0a10">High-performance compute</option>
+                  <option value="ai" style="background:#0a0a10">AI / ML workloads</option>
+                  <option value="data" style="background:#0a0a10">Distributed data pipeline</option>
+                  <option value="realtime" style="background:#0a0a10">Real-time applications</option>
+                  <option value="other" style="background:#0a0a10">Other</option>
+                </select>
+              </div>
+              <button type="submit" class="btn-r w-full justify-center !py-4 mt-1" id="subBtn">
+                <span id="subTxt">Request Access</span>
+                <span class="iconify" data-icon="lucide:arrow-right" id="subIco"></span>
+                <svg id="subSpin" class="hidden animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>
+              </button>
+              <p class="text-[11px] text-neutral-600 text-center pt-1">By signing up, you agree to our Terms of Service and Privacy Policy.</p>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ FINAL CTA ═══════════ -->
+<section class="relative py-28 md:py-36 overflow-hidden">
+  <div class="nebula w-[600px] h-[600px] bg-accent/[.06] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" style="animation:drift 18s ease-in-out infinite;animation-delay:-7s"></div>
+  <div class="max-w-4xl mx-auto px-6 text-center relative z-10">
+    <h2 class="rv text-3xl md:text-[3.5rem] lg:text-[4rem] font-extrabold tracking-tight mb-6 leading-tight">
+      The future<br>won't wait.
+    </h2>
+    <p class="rv d1 text-neutral-400 text-lg max-w-xl mx-auto mb-12 leading-relaxed">
+      Neither should you. The frontier is open — and it's being built right now, one node at a time.
+    </p>
+    <div class="rv d2">
+      <button class="btn-r text-[15px] !px-12 !py-5" onclick="go('access')">
+        Join the Frontier
+        <span class="iconify text-lg" data-icon="lucide:rocket"></span>
+      </button>
+    </div>
+    <!-- Trust -->
+    <div class="rv d3 mt-20 flex flex-wrap items-center justify-center gap-8 md:gap-14">
+      <div class="flex items-center gap-2.5 text-neutral-600">
+        <span class="iconify text-[17px]" data-icon="lucide:shield-check"></span>
+        <span class="text-[12px] font-medium">SOC 2 Certified</span>
+      </div>
+      <div class="flex items-center gap-2.5 text-neutral-600">
+        <span class="iconify text-[17px]" data-icon="lucide:globe"></span>
+        <span class="text-[12px] font-medium">40+ Regions</span>
+      </div>
+      <div class="flex items-center gap-2.5 text-neutral-600">
+        <span class="iconify text-[17px]" data-icon="lucide:users"></span>
+        <span class="text-[12px] font-medium">2,400+ Builders</span>
+      </div>
+      <div class="flex items-center gap-2.5 text-neutral-600">
+        <span class="iconify text-[17px]" data-icon="lucide:award"></span>
+        <span class="text-[12px] font-medium">Y Combinator W24</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ FOOTER ═══════════ -->
+<footer class="border-t border-white/[.04] py-16">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-10 mb-14">
+      <div class="col-span-2">
+        <div class="flex items-center gap-2.5 mb-4">
+          <div class="w-7 h-7 rounded-lg bg-accent flex items-center justify-center">
+            <span class="iconify text-white text-xs" data-icon="lucide:hexagon"></span>
+          </div>
+          <span class="text-white font-semibold">Novasphere</span>
+        </div>
+        <p class="text-[13px] text-neutral-500 leading-relaxed max-w-xs">Infrastructure for the next frontier. Building the compute layer for interplanetary civilization.</p>
+      </div>
+      <div>
+        <h4 class="text-[11px] font-bold uppercase tracking-widest text-neutral-400 mb-5">Product</h4>
+        <ul class="space-y-3">
+          <li><a href="#" class="text-[13px] text-neutral-500 hover:text-white transition-colors">Quantum Mesh</a></li>
+          <li><a href="#" class="text-[13px] text-neutral-500 hover:text-white transition-colors">AI Core</a></li>
+          <li><a href="#" class="text-[13px] text-neutral-500 hover:text-white transition-colors">Void Storage</a></li>
+          <li><a href="#" class="text-[13px] text-neutral-500 hover:text-white transition-colors">Pricing</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 class="text-[11px] font-bold uppercase tracking-widest text-neutral-400 mb-5">Resources</h4>
+        <ul class="space-y-3">
+          <li><a href="#" class="text-[13px] text-neutral-500 hover:text-white transition-colors">Documentation</a></li>
+          <li><a href="#" class="text-[13px] text-neutral-500 hover:text-white transition-colors">API Reference</a></li>
+          <li><a href="#" class="text-[13px] text-neutral-500 hover:text-white transition-colors">Status</a></li>
+          <li><a href="#" class="text-[13px] text-neutral-500 hover:text-white transition-colors">Changelog</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 class="text-[11px] font-bold uppercase tracking-widest text-neutral-400 mb-5">Company</h4>
+        <ul class="space-y-3">
+          <li><a href="#" class="text-[13px] text-neutral-500 hover:text-white transition-colors">About</a></li>
+          <li><a href="#" class="text-[13px] text-neutral-500 hover:text-white transition-colors">Careers</a></li>
+          <li><a href="#" class="text-[13px] text-neutral-500 hover:text-white transition-colors">Blog</a></li>
+          <li><a href="#" class="text-[13px] text-neutral-500 hover:text-white transition-colors">Contact</a></li>
+        </ul>
+      </div>
+    </div>
+    <hr class="border-white/[.04] mb-8">
+    <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+      <p class="text-[12px] text-neutral-600">© 2026 Novasphere, Inc. All rights reserved.Developed by Zannatul.</p>
+      <div class="flex items-center gap-6">
+        <a href="#" class="text-neutral-600 hover:text-white transition-colors"><span class="iconify text-[18px]" data-icon="lucide:twitter"></span></a>
+        <a href="#" class="text-neutral-600 hover:text-white transition-colors"><span class="iconify text-[18px]" data-icon="lucide:github"></span></a>
+        <a href="#" class="text-neutral-600 hover:text-white transition-colors"><span class="iconify text-[18px]" data-icon="lucide:linkedin"></span></a>
+        <a href="#" class="text-neutral-600 hover:text-white transition-colors"><span class="iconify text-[18px]" data-icon="lucide:disc"></span></a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- Toast -->
+<div class="toast-box" id="toast">
+  <div class="w-9 h-9 rounded-full bg-emerald-500/15 flex items-center justify-center shrink-0">
+    <span class="iconify text-emerald-400 text-lg" data-icon="lucide:check"></span>
+  </div>
+  <div>
+    <p class="text-[14px] font-semibold text-white">You're on the list!</p>
+    <p class="text-[12px] text-neutral-400">We'll be in touch soon.</p>
+  </div>
+</div>
+
+<script>
+/* ── Stars ── */
+(function(){
+  const c=document.getElementById('starfield'),n=220;
+  for(let i=0;i<n;i++){
+    const s=document.createElement('div');
+    s.className='star';
+    const sz=Math.random()*2+.5;
+    Object.assign(s.style,{
+      left:Math.random()*100+'%',
+      top:Math.random()*100+'%',
+      width:sz+'px',height:sz+'px',
+      animation:`blink ${Math.random()*5+2}s ease-in-out ${Math.random()*6}s infinite`
+    });
+    s.style.setProperty('--peak',(Math.random()*.6+.2).toFixed(2));
+    c.appendChild(s);
+  }
+})();
+
+/* ── Scroll reveal ── */
+function chkReveal(){
+  document.querySelectorAll('.rv').forEach(el=>{
+    if(el.getBoundingClientRect().top<window.innerHeight-70) el.classList.add('on');
+  });
+}
+window.addEventListener('scroll',chkReveal);
+window.addEventListener('load',chkReveal);
+
+/* ── Counter animation ── */
+function chkCounters(){
+  document.querySelectorAll('.ctr').forEach(el=>{
+    if(el.dataset.done) return;
+    if(el.getBoundingClientRect().top>window.innerHeight-50) return;
+    el.dataset.done='1';
+    const to=parseFloat(el.dataset.to),sfx=el.dataset.sfx||'',dec=parseInt(el.dataset.dec)||0,dur=2200,t0=performance.now();
+    (function tick(now){
+      const p=Math.min((now-t0)/dur,1),e=1-Math.pow(1-p,3);
+      el.textContent=(to*e).toFixed(dec)+sfx;
+      if(p<1) requestAnimationFrame(tick);
+    })(t0);
+  });
+}
+window.addEventListener('scroll',chkCounters);
+window.addEventListener('load',chkCounters);
+
+/* ── Card mouse glow ── */
+document.getElementById('sysGrid').addEventListener('mousemove',e=>{
+  const cards=e.currentTarget.querySelectorAll('.sys-card');
+  cards.forEach(card=>{
+    const r=card.getBoundingClientRect();
+    card.style.setProperty('--mx',(e.clientX-r.left)+'px');
+    card.style.setProperty('--my',(e.clientY-r.top)+'px');
+  });
+});
+
+/* ── Mobile menu ── */
+let mobOpen=false;
+document.getElementById('mobBtn').onclick=()=>{
+  if(!mobOpen){document.getElementById('mobMenu').classList.add('open');mobOpen=true}
+  else closeMob();
+};
+function closeMob(){document.getElementById('mobMenu').classList.remove('open');mobOpen=false}
+document.querySelectorAll('.mob-link').forEach(l=>l.addEventListener('click',closeMob));
+
+/* ── Smooth scroll ── */
+function go(id){document.getElementById(id)?.scrollIntoView({behavior:'smooth',block:'start'})}
+
+/* ── Form submit ── */
+function submitForm(e){
+  e.preventDefault();
+  const btn=document.getElementById('subBtn'),txt=document.getElementById('subTxt'),
+        ico=document.getElementById('subIco'),spin=document.getElementById('subSpin');
+  btn.disabled=true;txt.textContent='Submitting...';ico.classList.add('hidden');spin.classList.remove('hidden');
+  setTimeout(()=>{
+    btn.disabled=false;txt.textContent='Request Access';ico.classList.remove('hidden');spin.classList.add('hidden');
+    e.target.reset();
+    const t=document.getElementById('toast');t.classList.add('show');setTimeout(()=>t.classList.remove('show'),4200);
+  },1800);
+}
+
+/* ── Parallax on orbit box ── */
+document.addEventListener('mousemove',e=>{
+  const box=document.getElementById('orbitBox');
+  if(!box) return;
+  const x=(e.clientX/window.innerWidth-.5)*18,y=(e.clientY/window.innerHeight-.5)*18;
+  box.style.transform=`translate(${x}px,${y}px)`;
+});
+</script>
+</body>
+</html>
